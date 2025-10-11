@@ -16,8 +16,6 @@ type FS interface {
 	ContextualReadFileFS
 
 	WriteFileFS
-
-	PresignFS
 }
 
 // NamespacedFS clones the current FS with the new namespace, e.g., bucket from s3 or container from azure blob.

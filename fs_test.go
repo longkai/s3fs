@@ -28,8 +28,9 @@ func Example() {
 	// 0. Create an fs.
 	fs, fn := newTestFs()
 	defer fn()
+	// fs := s3fs.DirFS(os.TempDir())
 
-	name := "path/to/hello"
+	name := "path/to/file"
 
 	// 1. Create a file.
 	fs.Put(context.TODO(), name, strings.NewReader("hello\nworld"))
@@ -45,7 +46,7 @@ func Example() {
 	seeker.Seek(1024, io.SeekStart) // Read the file starts from byte 1024.
 
 	// (optional) Read all file content, if the file size is large, don't do it.
-	body, _ := fs.ReadFile("path/to/file")
+	body, _ := fs.ReadFile(name)
 	fmt.Fprintf(io.Discard, "file content: %s", body)
 
 	// 3. Read file content line by line, with buffering.
@@ -55,17 +56,21 @@ func Example() {
 	}
 
 	// 4. upload strings
-	fs.Put(context.TODO(), "path/to/file", strings.NewReader("hello, world"))
+	fs.Put(context.TODO(), name, strings.NewReader("hello, world"))
 
 	// 5. upload file
-	file, _ = os.Open("path/to/file")
-	fs.Put(context.TODO(), "path/to/file", file)
+	file, _ = os.Open(name)
+	fs.Put(context.TODO(), name, file)
 
-	// // 6. presign url with 15min expiration
-	fs.PresignGet(context.TODO(), "path/to/file", s3.WithPresignExpires(time.Minute*15))
+	// 6. presign url with 15min expiration
+	if fs, ok := fs.(s3fs.PresignFS); ok {
+		fs.PresignGet(context.TODO(), name, s3.WithPresignExpires(time.Minute*15))
+	}
 
 	// 7. delete a file
-	fs.Delete(context.TODO(), "path/to/file")
+	if err := fs.Delete(context.TODO(), name); err != nil {
+		panic(err)
+	}
 
 	// Output: hello
 	// world
@@ -130,7 +135,7 @@ func TestBaiscS3Operations(t *testing.T) {
 		t.Fatalf("read(%q) = %q, want %q", key, got, content)
 	}
 
-	u, err := fs.PresignGet(context.TODO(), key)
+	u, err := fs.(s3fs.PresignFS).PresignGet(context.TODO(), key)
 	if err != nil {
 		t.Fatalf("Presign: %+v", err)
 	}
@@ -293,7 +298,7 @@ func TestDlLargeFile(t *testing.T) {
 func TestPresignPut(t *testing.T) {
 	fs, fn := newTestFs()
 	defer fn()
-	url, err := fs.PresignGet(context.TODO(), "aaa")
+	url, err := fs.(s3fs.PresignFS).PresignGet(context.TODO(), "aaa")
 	if err != nil {
 		t.Fatal(err)
 	}
