@@ -298,7 +298,7 @@ func TestDlLargeFile(t *testing.T) {
 func TestPresignPut(t *testing.T) {
 	fs, fn := newTestFs()
 	defer fn()
-	url, err := fs.(s3fs.PresignFS).PresignGet(context.TODO(), "aaa")
+	url, err := fs.(s3fs.PresignFS).PresignPut(context.TODO(), "aaa")
 	if err != nil {
 		t.Fatal(err)
 	}

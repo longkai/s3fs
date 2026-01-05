@@ -166,7 +166,10 @@ func (a *awsS3) OpenWithContext(ctx context.Context, name string) (fs.File, erro
 
 // Put implements FS.
 func (a *awsS3) Put(ctx context.Context, name string, reader io.Reader) error {
-	uploader := manager.NewUploader(a.client)
+	uploader := manager.NewUploader(a.client, func(u *manager.Uploader) {
+		// backward compat ref: https://github.com/aws/aws-sdk-go-v2/pull/3151
+		u.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+	})
 	input := &s3.PutObjectInput{
 		Bucket: a.bucket,
 		Key:    aws.String(name),
