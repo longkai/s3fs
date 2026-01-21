@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/url"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -48,8 +50,22 @@ func New(options ...Option) (NamespacedFS, error) {
 				bufLen:    fs.bufLen,
 			}, nil
 		}
-		// sas token
-		cli, err := azblob.NewClientWithNoCredential(fs.endpoint, nil)
+		u, err := url.Parse(fs.endpoint)
+		if err != nil {
+			return nil, err
+		}
+		var cli *azblob.Client
+		if u.Query().Get("sig") != "" {
+			// SAS token
+			cli, err = azblob.NewClientWithNoCredential(fs.endpoint, nil)
+		} else {
+			// Microsoft Entra ID
+			cred, err := azidentity.NewDefaultAzureCredential(nil)
+			if err != nil {
+				return nil, err
+			}
+			cli, err = azblob.NewClient(fs.endpoint, cred, nil)
+		}
 		if err != nil {
 			return nil, err
 		}
