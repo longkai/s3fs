@@ -46,7 +46,7 @@ func New(options ...Option) (NamespacedFS, error) {
 			}
 			return &azBlobFs{
 				client:    cli,
-				container: *fs.bucket,
+				container: *fs.ns,
 				bufLen:    fs.bufLen,
 			}, nil
 		}
@@ -71,7 +71,7 @@ func New(options ...Option) (NamespacedFS, error) {
 		}
 		return &azBlobFs{
 			client:    cli,
-			container: *fs.bucket,
+			container: *fs.ns,
 			bufLen:    fs.bufLen,
 		}, nil
 	}
@@ -89,7 +89,7 @@ func New(options ...Option) (NamespacedFS, error) {
 type awsS3 struct {
 	// optional
 	bufLen int64
-	bucket *string
+	ns     *string
 
 	// facade, most common usage
 	ak, sk   string
@@ -111,7 +111,7 @@ func (a *awsS3) Client() *s3.Client {
 // PresignGet implements FS.
 func (a *awsS3) PresignGet(ctx context.Context, name string, optFns ...func(*s3.PresignOptions)) (string, error) {
 	rsp, err := a.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: a.bucket,
+		Bucket: a.ns,
 		Key:    aws.String(name),
 	}, optFns...)
 	if err != nil {
@@ -123,7 +123,7 @@ func (a *awsS3) PresignGet(ctx context.Context, name string, optFns ...func(*s3.
 // PresignPut implements FS.
 func (a *awsS3) PresignPut(ctx context.Context, name string, optFns ...func(*s3.PresignOptions)) (string, error) {
 	rsp, err := a.presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket: a.bucket,
+		Bucket: a.ns,
 		Key:    aws.String(name),
 	}, optFns...)
 	if err != nil {
@@ -137,28 +137,23 @@ func (a *awsS3) String() string {
 	return fmt.Sprintf(`{
   "bucket": %q,
   "client_ptr": "%p"
-}`, *a.bucket, a.client)
-}
-
-// WithBucket implements BucketFS.
-func (a *awsS3) WithBucket(bucket string) FS {
-	if bucket == "" {
-		panic("s3fs: with empty bucket")
-	}
-	tmp := *a
-	tmp.bucket = &bucket
-	return &tmp
+}`, *a.ns, a.client)
 }
 
 // Namespace implements BucketableFS.
 func (a *awsS3) Namespace(bucket string) FS {
-	return a.WithBucket(bucket)
+	if bucket == "" {
+		panic("s3fs: with empty bucket")
+	}
+	tmp := *a
+	tmp.ns = &bucket
+	return &tmp
 }
 
 // Delete implements FS.
 func (a *awsS3) Delete(ctx context.Context, name string) error {
 	_, err := a.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: a.bucket,
+		Bucket: a.ns,
 		Key:    aws.String(name),
 	})
 	return err
@@ -173,7 +168,7 @@ func (a *awsS3) Open(name string) (fs.File, error) {
 func (a *awsS3) OpenWithContext(ctx context.Context, name string) (fs.File, error) {
 	obj := &object{
 		ctx:    ctx,
-		client: newS3Client(a.client, *a.bucket),
+		client: newS3Client(a.client, *a.ns),
 		bufLen: a.bufLen,
 		name:   name,
 	}
@@ -187,7 +182,7 @@ func (a *awsS3) Put(ctx context.Context, name string, reader io.Reader) error {
 		u.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
 	})
 	input := &s3.PutObjectInput{
-		Bucket: a.bucket,
+		Bucket: a.ns,
 		Key:    aws.String(name),
 		Body:   reader,
 	}
@@ -204,7 +199,7 @@ func (a *awsS3) ReadFile(name string) ([]byte, error) {
 func (a *awsS3) ReadFileWithContext(ctx context.Context, name string) ([]byte, error) {
 	obj := &object{
 		ctx:    ctx,
-		client: newS3Client(a.client, *a.bucket),
+		client: newS3Client(a.client, *a.ns),
 		bufLen: a.bufLen,
 		name:   name,
 	}

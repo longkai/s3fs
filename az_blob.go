@@ -18,13 +18,8 @@ type azBlobFs struct {
 	bufLen int64 // optional
 }
 
-// Namespace implements BucketableFS.
+// Namespace implements NamespacedFS.
 func (a *azBlobFs) Namespace(container string) FS {
-	return a.WithContainer(container)
-}
-
-// WithContainer implements BucketFS.
-func (a *azBlobFs) WithContainer(container string) FS {
 	if container == "" {
 		panic("blobfs: with empty container")
 	}
@@ -33,18 +28,18 @@ func (a *azBlobFs) WithContainer(container string) FS {
 	return &tmp
 }
 
-// Delete implements BucketableFS.
+// Delete implements FS.
 func (a *azBlobFs) Delete(ctx context.Context, name string) error {
 	_, err := a.client.DeleteBlob(ctx, a.container, name, nil)
 	return err
 }
 
-// Open implements BucketableFS.
+// Open implements FS.
 func (a *azBlobFs) Open(name string) (fs.File, error) {
 	return a.OpenWithContext(context.Background(), name)
 }
 
-// OpenWithContext implements BucketableFS.
+// OpenWithContext implements FS.
 func (a *azBlobFs) OpenWithContext(ctx context.Context, name string) (fs.File, error) {
 	obj := &object{
 		ctx:    ctx,
@@ -55,28 +50,28 @@ func (a *azBlobFs) OpenWithContext(ctx context.Context, name string) (fs.File, e
 	return obj, obj.fillChunk(false)
 }
 
-// PresignGet implements BucketableFS.
+// PresignGet implements FS.
 func (a *azBlobFs) PresignGet(ctx context.Context, name string, optFns ...func(*s3.PresignOptions)) (string, error) {
 	panic("unimplemented")
 }
 
-// PresignPut implements BucketableFS.
+// PresignPut implements FS.
 func (a *azBlobFs) PresignPut(ctx context.Context, name string, optFns ...func(*s3.PresignOptions)) (string, error) {
 	panic("unimplemented")
 }
 
-// Put implements BucketableFS.
+// Put implements FS.
 func (a *azBlobFs) Put(ctx context.Context, name string, reader io.Reader) error {
 	_, err := a.client.UploadStream(ctx, a.container, name, reader, nil)
 	return err
 }
 
-// ReadFile implements BucketableFS.
+// ReadFile implements FS.
 func (a *azBlobFs) ReadFile(name string) ([]byte, error) {
 	return a.ReadFileWithContext(context.Background(), name)
 }
 
-// ReadFileWithContext implements BucketableFS.
+// ReadFileWithContext implements FS.
 func (a *azBlobFs) ReadFileWithContext(ctx context.Context, name string) ([]byte, error) {
 	obj := &object{
 		ctx:    ctx,

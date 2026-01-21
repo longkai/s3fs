@@ -9,6 +9,9 @@ import (
 type Option func(fs *awsS3)
 
 // WithCredential sets the access key, secret key.
+//
+// Note if you use Azure Blob Storage shared key credential, `ak` is the storage account's name,
+// where `sk` either its primary or secondary key.
 func WithCredential(ak, sk string) Option {
 	return func(fs *awsS3) {
 		fs.ak = ak
@@ -29,7 +32,8 @@ func WithRegion(region string) Option {
 //   - https://cos.ap-guangzhou.myqcloud.com
 //   - https://s3.us-west-2.amazonaws.com
 //   - http://1.2.3.4:1234
-//   - https://<blob-account>.blob.core.chinacloudapi.cn?<sas-token>
+//   - https://<storage-account>.blob.core.windows.net
+//   - https://<storage-account>.blob.core.chinacloudapi.cn?<sas-token>
 //
 // Note: Don't include the bucket name in the given URL.
 func WithEndpoint(endpoint string) Option {
@@ -38,10 +42,10 @@ func WithEndpoint(endpoint string) Option {
 	}
 }
 
-// WithBucket sets the bucket.
-func WithBucket(bucket string) Option {
+// WithNamespace sets the bucket(s3) or container name(blob).
+func WithNamespace(ns string) Option {
 	return func(fs *awsS3) {
-		fs.bucket = aws.String(bucket)
+		fs.ns = aws.String(ns)
 	}
 }
 

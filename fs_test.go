@@ -97,7 +97,7 @@ func newTestFs() (s3fs.FS, func()) {
 	}
 	fs, _ := s3fs.New(
 		s3fs.WithCredential("AK******", "SK******"),
-		s3fs.WithBucket("test-bucket"),
+		s3fs.WithNamespace("test-bucket"),
 		s3fs.WithBufferSize(1),
 		// s3fs.WithEndpoint(ts.URL),
 		s3fs.WithOptFns(func(o *s3.Options) {

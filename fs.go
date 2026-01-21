@@ -20,7 +20,7 @@ type FS interface {
 
 // NamespacedFS clones the current FS with the new namespace, e.g., bucket from s3 or container from azure blob.
 type NamespacedFS interface {
-	// Namespace lets you change the namespace(bucket or container), like `cd` in shell.
+	// Namespace lets you change the namespace(bucket or container), like `cd` in shells.
 	Namespace(string) FS
 	FS
 }
